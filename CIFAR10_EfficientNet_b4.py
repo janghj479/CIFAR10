@@ -30,9 +30,7 @@ else:
 print('Using PyTorch version: ', torch.__version__, 'Device: ', DEVICE)
 
 #%% 3. 
-#BATCH_SIZE = 32 #32 
 EPOCHS = 30
-#DIR = "D:/Git/checkpoint/"
 
 batch = 32
 batch_split = 1
@@ -49,12 +47,12 @@ train_dataset = datasets.CIFAR10(root = "../data/CIFAR_10",
                                  train=True, 
                                  download=True, 
                                  transform = transforms.Compose([
-                                     transforms.RandomResizedCrop(size=160, scale=(0.6,1.0)), #, padding_mode='reflect' 
+                                     transforms.RandomResizedCrop(size=160, scale=(0.6,1.0)), 
                                      transforms.RandomHorizontalFlip(),
                                      transforms.ToTensor(),
-                                     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])) # github 
-                                    # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) pytorch 
-                                    # transforms.RandomResizedCrop(224)
+                                     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))]))
+                                    
+                                    
 
 test_dataset = datasets.CIFAR10(root = "../data/CIFAR_10",
                                  train=False, 
@@ -109,18 +107,13 @@ for i in range(10):
     
     
 #%% 6. ResNet 
-#net = models.ResNet34(pretrained=True)
 net = EfficientNet.from_pretrained('efficientnet-b4', num_classes=10)
-#num_ftrs = net.fc.in_features
-#net.fc = nn.Linear(num_ftrs, 10)
     
 #%% 7. Optimizer, Objective Fuction 
 model = net.to(DEVICE) 
 optimizer = optim.SGD(net.parameters(), lr = 0.01, momentum=0.9, weight_decay=1e-6)
 lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)  
 criterion = nn.CrossEntropyLoss() 
-
-save_ckpt = './checkpoint/ckpt.pth'  
 
 print(model)
 
@@ -167,7 +160,7 @@ def train(model, train_loader, optimizer, log_interval): # scheduler
 eval_loss=[]
 eval_acc=[]
 
-def evaluate(model, test_loader, save_ckpt): 
+def evaluate(model, test_loader): 
     
     global best_acc
     model.eval()
@@ -185,18 +178,6 @@ def evaluate(model, test_loader, save_ckpt):
     
     eval_loss.append(test_loss)
     eval_acc.append(test_accuracy)
-    
-    # Save checkpoint.
-    print('Saving...')
-    state = {
-        'net' : net.state_dict(),
-        'acc' : test_accuracy,
-        }
-    if not os.path.isdir('checkpoint'):
-        os.mkdir('checkpoint')
-    torch.save(state, save_ckpt)
-    #best save high test accuracy save
-    # and best save
     
     # best_accuracy
     if test_accuracy > best_acc:
@@ -223,14 +204,12 @@ def evaluate(model, test_loader, save_ckpt):
 
 start_epoch = 0
 
-
-
 for Epoch in range(start_epoch, EPOCHS + 1):
 
     train(model, train_loader, optimizer, log_interval = 200) 
     lr_scheduler.step()
 
-    test_loss, test_accuracy = evaluate(model, test_loader, save_ckpt) 
+    test_loss, test_accuracy = evaluate(model, test_loader) 
     
     print("\n[EPOCH: {}], \tTest Loss: {:.4f}, \tTest Accuracy: {:.2f} % \n".format(
         Epoch, test_loss, test_accuracy))
